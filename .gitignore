@@ -12,3 +12,5 @@ local.extra.properties
 /obj/
 /buildSrc/build
 /codecov.sh
+.java-version
+*keystore
