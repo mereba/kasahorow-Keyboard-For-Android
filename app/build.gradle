@@ -34,7 +34,7 @@ if(project.hasProperty("kasahorow.signing.config") && new File(project.property(
 
         defaultConfig {
 
-            def version_code = 10319
+            def version_code = 10320
 
             applicationId 'com.kasahorow.android.keyboard.app'
             versionCode version_code
