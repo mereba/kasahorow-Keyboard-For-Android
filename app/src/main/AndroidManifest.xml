@@ -33,7 +33,7 @@
         android:fullBackupContent="true"
         android:backupAgent="com.anysoftkeyboard.backup.AnyBackupAgent"
         android:hardwareAccelerated="true"
-        android:icon="@mipmap/ic_ask_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:installLocation="internalOnly"
         android:label="@string/ime_name"
         android:restoreAnyVersion="true"
