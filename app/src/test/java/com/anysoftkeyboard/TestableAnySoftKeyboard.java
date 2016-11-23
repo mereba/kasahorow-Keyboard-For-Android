@@ -20,6 +20,7 @@ import com.anysoftkeyboard.keyboards.KeyboardAddOnAndBuilder;
 import com.anysoftkeyboard.keyboards.KeyboardSwitcher;
 import com.anysoftkeyboard.keyboards.views.AnyKeyboardView;
 import com.anysoftkeyboard.keyboards.views.CandidateView;
+import com.anysoftkeyboard.quicktextkeys.TagsExtractor;
 import com.menny.android.anysoftkeyboard.R;
 import com.menny.android.anysoftkeyboard.SoftKeyboard;
 
@@ -58,6 +59,11 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
     }
 
     @Override
+    public TagsExtractor getQuickTextTagsSearcher() {
+        return super.getQuickTextTagsSearcher();
+    }
+
+    @Override
     protected InputMethodManager getInputMethodManager() {
         return mSpiedInputMethodManager;
     }
@@ -70,8 +76,16 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
         return mSpiedUserDictionary;
     }
 
+    public AnyKeyboardView getSpiedKeyboardView() {
+        return mSpiedKeyboardView;
+    }
+
     public CandidateView getMockCandidateView() {
         return mMockCandidateView;
+    }
+
+    public boolean isAddToDictionartHintShown(){
+        return mCandidateShowsHint;
     }
 
     @NonNull
@@ -118,6 +132,14 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
                 return null;
             }
         }).when(mMockCandidateView).showAddToDictionaryHint(Mockito.any(CharSequence.class));
+        Mockito.doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                mCandidateShowsHint = false;
+                return null;
+            }
+        }).when(mMockCandidateView).notifyAboutWordAdded(Mockito.any(CharSequence.class));
+
     }
 
     @Override
@@ -209,7 +231,8 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
         if (key == null) {
             onKey(keyCode, null, 0, new int[0], true);
         } else {
-            onKey(keyCode, key, 0, keyboard.getNearestKeys(key.x + 5, key.y + 5), true);
+            final int keyCodeWithShiftState = key.getCodeAtIndex(0, mSpiedKeyboardView.getKeyDetector().isKeyShifted(key));
+            onKey(keyCodeWithShiftState, key, 0, keyboard.getNearestKeys(key.x + 5, key.y + 5), true);
         }
         Robolectric.flushForegroundThreadScheduler();
         if (advanceTime) ShadowSystemClock.sleep(25);
@@ -243,6 +266,10 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
         return mLastOnKeyPrimaryCode;
     }
 
+    public String getCurrentInputConnectionText() {
+        return mInputConnection.getCurrentTextInInputConnection();
+    }
+
     public static class TestableSuggest extends Suggest {
 
         private final Map<String, List<CharSequence>> mDefinedWords = new HashMap<>();
@@ -264,6 +291,8 @@ public class TestableAnySoftKeyboard extends SoftKeyboard {
 
         @Override
         public List<CharSequence> getSuggestions(WordComposer wordComposer, boolean includeTypedWordIfValid) {
+            if (wordComposer.isAtTagsSearchState()) return super.getSuggestions(wordComposer, includeTypedWordIfValid);
+
             String word = wordComposer.getTypedWord().toString().toLowerCase();
 
             ArrayList<CharSequence> suggestions = new ArrayList<>();

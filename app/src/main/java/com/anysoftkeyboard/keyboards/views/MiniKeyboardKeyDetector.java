@@ -41,7 +41,7 @@ class MiniKeyboardKeyDetector extends KeyDetector {
         final Key[] keys = getKeys();
         final int touchX = getTouchX(x);
         final int touchY = getTouchY(y);
-        int closestKeyIndex = AnyKeyboardBaseView.NOT_A_KEY;
+        int closestKeyIndex = AnyKeyboardViewBase.NOT_A_KEY;
         int closestKeyDist = (y < 0) ? mSlideAllowanceSquareTop : mSlideAllowanceSquare;
         final int keyCount = keys.length;
         for (int i = 0; i < keyCount; i++) {
@@ -52,8 +52,16 @@ class MiniKeyboardKeyDetector extends KeyDetector {
                 closestKeyDist = dist;
             }
         }
-        if (allKeys != null && closestKeyIndex != AnyKeyboardBaseView.NOT_A_KEY)
-            allKeys[0] = keys[closestKeyIndex].getCodeAtIndex(0, mKeyboard.isShifted());
+        if (allKeys != null && closestKeyIndex != AnyKeyboardViewBase.NOT_A_KEY) {
+            final Key key = keys[closestKeyIndex];
+            allKeys[0] = key.getCodeAtIndex(0, isKeyShifted(key));
+        }
         return closestKeyIndex;
+    }
+
+    @Override
+    public boolean isKeyShifted(Key key) {
+        //in the mini-keyboard we want to shift the keys depending on the state of the parent keyboard.
+        return mKeyboard != null && mKeyboard.isShifted();
     }
 }
