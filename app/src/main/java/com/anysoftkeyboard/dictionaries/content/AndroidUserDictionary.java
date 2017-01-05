@@ -25,7 +25,6 @@ import android.net.Uri;
 import android.provider.UserDictionary.Words;
 import android.text.TextUtils;
 
-import com.anysoftkeyboard.base.dictionaries.WordsCursor;
 import com.anysoftkeyboard.dictionaries.BTreeDictionary;
 import com.anysoftkeyboard.utils.Logger;
 
@@ -44,14 +43,19 @@ public class AndroidUserDictionary extends BTreeDictionary {
         contentResolver.registerContentObserver(Words.CONTENT_URI, false, dictionaryContentObserver);
     }
 
-    public WordsCursor getWordsCursor() {
+    @Override
+    protected void readWordsFromActualStorage(WordReadListener listener) {
         Cursor cursor = TextUtils.isEmpty(mLocale) ?
                 mContext.getContentResolver().query(Words.CONTENT_URI, PROJECTION, "(" + Words.LOCALE + " IS NULL)", null, null) :
                 mContext.getContentResolver().query(Words.CONTENT_URI, PROJECTION, "(" + Words.LOCALE + " IS NULL) or (" + Words.LOCALE + "=?)", new String[]{mLocale}, null);
 
         if (cursor == null) throw new RuntimeException("No built-in Android dictionary!");
-
-        return new WordsCursor(cursor);
+        if (cursor.moveToFirst()) {
+            while ((!cursor.isAfterLast()) && listener.onWordRead(cursor.getString(1), cursor.getInt(2))) {
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
     }
 
     @Override

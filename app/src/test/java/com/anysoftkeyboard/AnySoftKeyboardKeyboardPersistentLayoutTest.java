@@ -4,7 +4,9 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
+import android.support.v4.content.SharedPreferencesCompat;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethod;
 
 import com.anysoftkeyboard.api.KeyCodes;
 import com.anysoftkeyboard.keyboards.KeyboardFactory;
@@ -30,7 +32,8 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
         //enabling the second english keyboard
         Assert.assertEquals(1, KeyboardFactory.getEnabledKeyboards(RuntimeEnvironment.application).size());
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(RuntimeEnvironment.application);
-        sharedPreferences.edit().putBoolean("keyboard_12335055-4aa6-49dc-8456-c7d38a1a5123", true).commit();
+        final SharedPreferences.Editor editor = sharedPreferences.edit().putBoolean("keyboard_12335055-4aa6-49dc-8456-c7d38a1a5123", true);
+        SharedPreferencesCompat.EditorCompat.getInstance().apply(editor);
         Assert.assertEquals(2, KeyboardFactory.getEnabledKeyboards(RuntimeEnvironment.application).size());
         //starting service
         ServiceController<TestableAnySoftKeyboard> anySoftKeyboardController = Robolectric.buildService(TestableAnySoftKeyboard.class);
@@ -49,7 +52,7 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
         editorInfo.fieldId = packageId == null ? 0 : packageId.hashCode();
 
         mAnySoftKeyboardUnderTest.onStartInput(editorInfo, restarting);
-        if (mAnySoftKeyboardUnderTest.onShowInputRequested(0, configChange)) {
+        if (mAnySoftKeyboardUnderTest.onShowInputRequested(InputMethod.SHOW_EXPLICIT, configChange)) {
             mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, restarting);
         }
     }
@@ -138,8 +141,6 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
 
         configuration.orientation = Configuration.ORIENTATION_LANDSCAPE;
         mAnySoftKeyboardUnderTest.onConfigurationChanged(configuration);
-        configuration.orientation = Configuration.ORIENTATION_PORTRAIT;
-        mAnySoftKeyboardUnderTest.onConfigurationChanged(configuration);
 
         startInputFromPackage("com.app2", true/*restarting the same input*/, true/*this is a config change*/);
         Assert.assertEquals("keyboard_12335055-4aa6-49dc-8456-c7d38a1a5123", mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getKeyboardAddOn().getId());
@@ -148,6 +149,12 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
         startInputFromPackage("com.app1");
         Assert.assertEquals("keyboard_c7535083-4fe6-49dc-81aa-c5438a1a343a", mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getKeyboardAddOn().getId());
         finishInput();
+
+        configuration.orientation = Configuration.ORIENTATION_PORTRAIT;
+        mAnySoftKeyboardUnderTest.onConfigurationChanged(configuration);
+
+        startInputFromPackage("com.app1");
+        Assert.assertEquals("keyboard_c7535083-4fe6-49dc-81aa-c5438a1a343a", mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getKeyboardAddOn().getId());
     }
 
     @Test
@@ -167,7 +174,8 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
         finishInput();
 
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(RuntimeEnvironment.application);
-        sharedPreferences.edit().putBoolean("keyboard_12335055-4aa6-49dc-8456-c7d38a1a5123", false).commit();
+        final SharedPreferences.Editor editor = sharedPreferences.edit().putBoolean("keyboard_12335055-4aa6-49dc-8456-c7d38a1a5123", false);
+        SharedPreferencesCompat.EditorCompat.getInstance().apply(editor);
 
         startInputFromPackage("com.app2");
         Assert.assertEquals("keyboard_c7535083-4fe6-49dc-81aa-c5438a1a343a", mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getKeyboardAddOn().getId());
@@ -177,7 +185,8 @@ public class AnySoftKeyboardKeyboardPersistentLayoutTest {
     @Test
     public void testLayoutNotPersistentWithPackageIdIfPrefIsDisabled() {
         final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(RuntimeEnvironment.application);
-        sharedPreferences.edit().putBoolean(RuntimeEnvironment.application.getString(R.string.settings_key_persistent_layout_per_package_id), false).commit();
+        final SharedPreferences.Editor editor = sharedPreferences.edit().putBoolean(RuntimeEnvironment.application.getString(R.string.settings_key_persistent_layout_per_package_id), false);
+        SharedPreferencesCompat.EditorCompat.getInstance().apply(editor);
 
         AskPrefs askPrefs = new AskPrefsImpl(RuntimeEnvironment.application);
         Assert.assertFalse(askPrefs.getPersistLayoutForPackageId());

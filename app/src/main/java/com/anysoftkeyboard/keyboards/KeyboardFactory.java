@@ -19,6 +19,7 @@ package com.anysoftkeyboard.keyboards;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.v4.content.SharedPreferencesCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 
@@ -79,7 +80,7 @@ public class KeyboardFactory extends AddOnsFactory<KeyboardAddOnAndBuilder> {
             final SharedPreferences.Editor editor = sharedPreferences.edit();
             final KeyboardAddOnAndBuilder addOn = allAddOns.get(0);
             editor.putBoolean(addOn.getId(), true);
-            editor.commit();
+            SharedPreferencesCompat.EditorCompat.getInstance().apply(editor);
             enabledAddOns.add(addOn);
         }
 
@@ -99,7 +100,7 @@ public class KeyboardFactory extends AddOnsFactory<KeyboardAddOnAndBuilder> {
     }
 
     @Override
-    protected KeyboardAddOnAndBuilder createConcreteAddOn(Context askContext, Context context, String prefId, int nameId, String description, int sortIndex, AttributeSet attrs) {
+    protected KeyboardAddOnAndBuilder createConcreteAddOn(Context askContext, Context context, String prefId, int nameId, String description, boolean isHidden, int sortIndex, AttributeSet attrs) {
         final int layoutResId = attrs.getAttributeResourceValue(null, XML_LAYOUT_RES_ID_ATTRIBUTE, AddOn.INVALID_RES_ID);
         final int landscapeLayoutResId = attrs.getAttributeResourceValue(null, XML_LANDSCAPE_LAYOUT_RES_ID_ATTRIBUTE, AddOn.INVALID_RES_ID);
         final int iconResId = attrs.getAttributeResourceValue(null, XML_ICON_RES_ID_ATTRIBUTE, R.drawable.sym_keyboard_notification_icon);
@@ -128,8 +129,11 @@ public class KeyboardFactory extends AddOnsFactory<KeyboardAddOnAndBuilder> {
                     prefId, nameId, layoutResId, landscapeLayoutResId,
                     defaultDictionary, iconResId, physicalTranslationResId,
                     additionalIsLetterExceptions, sentenceSeparators,
-                    description, sortIndex, keyboardDefault);
+                    description, isHidden, sortIndex, keyboardDefault);
         }
     }
 
+    public static boolean hasMultipleAlphabets(Context askContext) {
+        return getEnabledKeyboards(askContext).size() > 1;
+    }
 }

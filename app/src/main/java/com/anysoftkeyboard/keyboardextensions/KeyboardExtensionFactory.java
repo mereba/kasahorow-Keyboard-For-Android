@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.v4.content.SharedPreferencesCompat;
 import android.util.AttributeSet;
 
 import com.anysoftkeyboard.addons.AddOn;
@@ -86,7 +87,7 @@ public class KeyboardExtensionFactory extends AddOnsFactory<KeyboardExtension> {
             if (selectedKeyboard != null) {
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString(settingKey, selectedKeyboard.getId());
-                editor.commit();
+                SharedPreferencesCompat.EditorCompat.getInstance().apply(editor);
             }
         }
 
@@ -115,9 +116,8 @@ public class KeyboardExtensionFactory extends AddOnsFactory<KeyboardExtension> {
     }
 
     @Override
-    protected KeyboardExtension createConcreteAddOn(Context askContext, Context context, String prefId, int nameResId, String description, int sortIndex, AttributeSet attrs) {
-        int keyboardResId = attrs.getAttributeResourceValue(null,
-                XML_EXT_KEYBOARD_RES_ID_ATTRIBUTE, AddOn.INVALID_RES_ID);
+    protected KeyboardExtension createConcreteAddOn(Context askContext, Context context, String prefId, int nameResId, String description, boolean isHidden, int sortIndex, AttributeSet attrs) {
+        int keyboardResId = attrs.getAttributeResourceValue(null, XML_EXT_KEYBOARD_RES_ID_ATTRIBUTE, AddOn.INVALID_RES_ID);
         if (keyboardResId == AddOn.INVALID_RES_ID)
             keyboardResId = attrs.getAttributeIntValue(null, XML_EXT_KEYBOARD_RES_ID_ATTRIBUTE, AddOn.INVALID_RES_ID);
         @KeyboardExtension.KeyboardExtensionType
@@ -132,7 +132,7 @@ public class KeyboardExtensionFactory extends AddOnsFactory<KeyboardExtension> {
         if (extensionType == AddOn.INVALID_RES_ID) {
             throw new RuntimeException(String.format(Locale.US, "Missing details for creating Extension Keyboard! prefId %s\nkeyboardResId: %d, type: %d", prefId, keyboardResId, extensionType));
         } else {
-            return new KeyboardExtension(askContext, context, prefId, nameResId, keyboardResId, extensionType, description, sortIndex);
+            return new KeyboardExtension(askContext, context, prefId, nameResId, keyboardResId, extensionType, description, isHidden, sortIndex);
         }
     }
 

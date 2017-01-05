@@ -11,12 +11,45 @@ public class VersionChangeLogs {
     static List<VersionChangeLog> createChangeLog() {
         List<VersionChangeLog> log = new ArrayList<>();
 
+        log.add(new VersionChangeLog(1, 8, "r8", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r8"),
+                "Much improved English dictionary.",
+                "A few bug fixes.",
+                "Localization update: ."));
+
+        log.add(new VersionChangeLog(1, 8, "r7.1", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestone/78"),
+                "Bringing back missing Alphabet keys from some layouts.",
+                "Getting the hint if you say no to contacts."));
+
+        log.add(new VersionChangeLog(1, 8, "r7", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r7"),
+                "Language key will now show only if you actually have more than one layout enabled.",
+                "For Android 7.1 - you now have Launcher shortcuts.",
+                "A few changes to the dictionary loading mechanism.",
+                "Some bug fixes.",
+                "Emojis are no longer popups, but their own keyboard. Plus, long press to get various skin tones (if available).",
+                "YABTU",
+                "Localization update: BE, UK, FR, TR, and SL."));
+
+        log.add(new VersionChangeLog(1, 8, "r6", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r6"),
+                "Quite a few bug fixes, some related to shift states.",
+                "Some English dictionary tuning.",
+                "Now showing Greek alphabets in long-press popups.",
+                "Localization update: FR, BE."));
+
+        log.add(new VersionChangeLog(1, 8, "r5", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r5"),
+                "Many bug fixes",
+                "Now you can \uD83D\uDD0D for emojis! Just start your search with a colon, like this - ':magnifying",
+                "Long-press an emoji to find out its assigned tags.",
+                "A massive rewrite of long-press interactions. I hope I didn't break anything (major).",
+                "When in a password field, numbers will show up at the top of the keyboard, because strong passwords and such.",
+                "Also, pressing SHIFT, will switch the numbers-row to symbols, because strong passwords and such.",
+                "YABTU.",
+                "Localization update: KN, KU, PT-BR."));
+
         log.add(new VersionChangeLog(1, 8, "r4", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r4"),
                 "Updated Emoticon emoji listing - presentation is everything \uD83D\uDE0E!",
                 "Also, flags \uD83C\uDFC1 were also added to the emoji list.",
                 "Merged People and Gestures, and added a bunch \uD83D\uDE4B.",
-                "Unfortunately - to make sure emojis are full supported - it is only available for Android 6.0 devices \uD83D\uDE22.",
-                "Localization update: ."));
+                "Unfortunately - to make sure emojis are full supported - it is only available for Android 6.0 devices \uD83D\uDE22."));
 
         log.add(new VersionChangeLog(1, 8, "r3", Uri.parse("https://github.com/AnySoftKeyboard/AnySoftKeyboard/milestones/1.8-r3"),
                 "New Dark-Gray theme.",

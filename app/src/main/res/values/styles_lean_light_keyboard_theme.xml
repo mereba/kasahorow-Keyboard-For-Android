@@ -32,6 +32,8 @@
 
         <item name="keyTextStyle">normal</item>
         <item name="shadowRadius">0px</item>
+
+        <item name="previewAnimationType">extend_key</item>
     </style>
 
     <style name="LeanLightPopup" parent="@style/AnyKeyboardPopupBaseTheme">
@@ -52,6 +54,7 @@
         <item name="iconKeySpace">@drawable/sym_keyboard_space_light</item>
         <item name="iconKeyTab">@drawable/sym_keyboard_tab_light</item>
         <item name="iconKeyCancel">@drawable/sym_keyboard_cancel_light</item>
+        <item name="iconKeyGlobe">@drawable/ic_language_light</item>
 
         <item name="iconKeyAction">@drawable/light_key_action_set</item>
         <item name="iconKeyMic">@drawable/ic_av_mic_light</item>
@@ -65,6 +68,7 @@
         <item name="iconKeyClipboardCut">@drawable/ic_clipboard_cut_light</item>
         <item name="iconKeyClipboardPaste">@drawable/ic_clipboard_paste_light</item>
         <item name="iconKeyClipboardSelect">@drawable/ic_clipboard_select_light</item>
+        <item name="iconKeyQuickText">@drawable/ic_quick_text_light_theme</item>
     </style>
 
     <style name="LeanLight2" parent="@style/LeanLight">

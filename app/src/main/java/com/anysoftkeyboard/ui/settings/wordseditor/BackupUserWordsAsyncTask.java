@@ -17,20 +17,21 @@
 package com.anysoftkeyboard.ui.settings.wordseditor;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.os.Environment;
-import android.provider.UserDictionary.Words;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-import com.anysoftkeyboard.base.dictionaries.WordsCursor;
 import com.anysoftkeyboard.dictionaries.UserDictionary;
+import com.anysoftkeyboard.dictionaries.content.AndroidUserDictionary;
+import com.anysoftkeyboard.dictionaries.sqlite.FallbackUserDictionary;
 import com.anysoftkeyboard.utils.Logger;
 import com.anysoftkeyboard.utils.XmlWriter;
 import com.menny.android.anysoftkeyboard.R;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 final class BackupUserWordsAsyncTask extends UserWordsEditorAsyncTask {
     private static final String TAG = "ASK BackupUDict";
@@ -75,29 +76,20 @@ final class BackupUserWordsAsyncTask extends UserWordsEditorAsyncTask {
         output.writeEntity("userwordlist");
         for (String locale : mLocalesToSave) {
             Logger.d(TAG, "Building dictionary for locale " + locale);
-            UserDictionary dictionary = new UserDictionary(mAppContext, locale);
+            MyUserDictionary dictionary = new MyUserDictionary(mAppContext, locale);
             dictionary.loadDictionary();
             Logger.d(TAG, "Reading words from user dictionary locale " + locale);
-            WordsCursor wordsCursor = dictionary.getWordsCursor();
 
             output.writeEntity("wordlist").writeAttribute("locale", locale);
-            Cursor cursor = wordsCursor.getCursor();
-            cursor.moveToFirst();
-            final int wordIndex = cursor.getColumnIndex(Words.WORD);
-            final int freqIndex = cursor.getColumnIndex(Words.FREQUENCY);
+            List<UserDictionaryEditorFragment.LoadedWord> words = dictionary.getLoadedWords();
 
-            while (!cursor.isAfterLast()) {
-                String word = cursor.getString(wordIndex).trim();
-                int freq = cursor.getInt(freqIndex);
+            for (UserDictionaryEditorFragment.LoadedWord word : words) {
                 // <w f="128">Facebook</w>
                 output.writeEntity("w")
-                        .writeAttribute("f", Integer.toString(freq))
-                        .writeText(word).endEntity();
-                Logger.d(TAG, "Storing word '" + word + "' with freq " + freq);
-                cursor.moveToNext();
+                        .writeAttribute("f", Integer.toString(word.freq))
+                        .writeText(word.word).endEntity();
             }
 
-            wordsCursor.close();
             dictionary.close();
 
             output.endEntity();// wordlist
@@ -128,5 +120,87 @@ final class BackupUserWordsAsyncTask extends UserWordsEditorAsyncTask {
         // dictionary members)
         if (a != null)
             a.fillLanguagesSpinner();
+    }
+
+    private static class MyUserDictionary extends UserDictionary implements UserDictionaryEditorFragment.MyEditableDictionary {
+
+        public MyUserDictionary(Context context, String locale) {
+            super(context, locale);
+        }
+
+        @NonNull
+        @Override
+        public List<UserDictionaryEditorFragment.LoadedWord> getLoadedWords() {
+            return ((UserDictionaryEditorFragment.MyEditableDictionary)super.getActualDictionary()).getLoadedWords();
+        }
+
+        @NonNull
+        @Override
+        protected AndroidUserDictionary createAndroidUserDictionary(Context context, String locale) {
+            return new MyAndroidUserDictionary(context, locale);
+        }
+
+        @NonNull
+        @Override
+        protected FallbackUserDictionary createFallbackUserDictionary(Context context, String locale) {
+            return new MyFallbackUserDictionary(context, locale);
+        }
+    }
+
+    private static class MyFallbackUserDictionary extends FallbackUserDictionary implements UserDictionaryEditorFragment.MyEditableDictionary {
+
+        @NonNull
+        private List<UserDictionaryEditorFragment.LoadedWord> mLoadedWords = new ArrayList<>();
+
+        public MyFallbackUserDictionary(Context context, String locale) {
+            super(context, locale);
+        }
+
+        @Override
+        protected void readWordsFromActualStorage(final WordReadListener listener) {
+            mLoadedWords.clear();
+            WordReadListener myListener = new WordReadListener() {
+                @Override
+                public boolean onWordRead(String word, int frequency) {
+                    mLoadedWords.add(new UserDictionaryEditorFragment.LoadedWord(word, frequency));
+                    return listener.onWordRead(word, frequency);
+                }
+            };
+            super.readWordsFromActualStorage(myListener);
+        }
+
+        @NonNull
+        @Override
+        public List<UserDictionaryEditorFragment.LoadedWord> getLoadedWords() {
+            return mLoadedWords;
+        }
+    }
+    private static class MyAndroidUserDictionary extends AndroidUserDictionary implements UserDictionaryEditorFragment.MyEditableDictionary {
+
+        @NonNull
+        private List<UserDictionaryEditorFragment.LoadedWord> mLoadedWords = new ArrayList<>();
+
+        public MyAndroidUserDictionary(Context context, String locale) {
+            super(context, locale);
+        }
+
+        @Override
+        protected void readWordsFromActualStorage(final WordReadListener listener) {
+            mLoadedWords.clear();
+            WordReadListener myListener = new WordReadListener() {
+                @Override
+                public boolean onWordRead(String word, int frequency) {
+                    mLoadedWords.add(new UserDictionaryEditorFragment.LoadedWord(word, frequency));
+                    return listener.onWordRead(word, frequency);
+                }
+            };
+            super.readWordsFromActualStorage(myListener);
+        }
+
+        @NonNull
+        @Override
+        public List<UserDictionaryEditorFragment.LoadedWord> getLoadedWords() {
+            return mLoadedWords;
+        }
     }
 }

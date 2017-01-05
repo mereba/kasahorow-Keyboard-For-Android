@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
 import android.support.v4.util.SparseArrayCompat;
 import android.util.SparseIntArray;
 
@@ -39,9 +40,9 @@ public abstract class AddOnImpl implements AddOn {
     private WeakReference<Context> mPackageContext;
     private final int mSortIndex;
     private final AddOnResourceMappingImpl mAddOnResourceMapping;
+    private final boolean mHiddenAddOn;
 
-    protected AddOnImpl(Context askContext, Context packageContext, String id, int nameResId,
-                        String description, int sortIndex) {
+    protected AddOnImpl(Context askContext, Context packageContext, String id, @StringRes int nameResId, String description, boolean hidden, int sortIndex) {
         mId = id;
         mAskAppContext = askContext;
         mName = packageContext.getString(nameResId);
@@ -50,6 +51,7 @@ public abstract class AddOnImpl implements AddOn {
         mPackageContext = new WeakReference<>(packageContext);
         mSortIndex = sortIndex;
         mAddOnResourceMapping = new AddOnResourceMappingImpl(this);
+        mHiddenAddOn = hidden;
     }
 
     public final String getId() {
@@ -113,22 +115,6 @@ public abstract class AddOnImpl implements AddOn {
             mAddOnWeakReference = new WeakReference<>(addOn);
         }
 
-/*        @AttrRes
-        @Override
-        public int getLocalAttrIdFromRemote(@AttrRes int remoteAttributeResourceId) {
-            //8.6
-            int indexOfLocalAttrId = mAttributesMapping.indexOfKey(remoteAttributeResourceId);
-            if (indexOfLocalAttrId >= 0) return mAttributesMapping.valueAt(indexOfLocalAttrId);
-            AddOnImpl addOn = mAddOnWeakReference.get();
-            if (addOn == null) return 0;
-            Context askContext = addOn.mAskAppContext;
-            Context remoteContext = addOn.getPackageContext();
-            if (remoteContext == null) return 0;
-            int[] remoteAttrIds = Support.createBackwardCompatibleStyleable(new int[]{localAttributeResourceId}, askContext, remoteContext, mAttributesMapping);
-            mAttributesMapping.put(localAttributeResourceId, remoteAttrIds[0]);
-            return remoteAttrIds[0];
-        }*/
-
         @Override
         public int[] getRemoteStyleableArrayFromLocal(int[] localStyleableArray) {
             int localStyleableId = Arrays.hashCode(localStyleableArray);
@@ -143,5 +129,9 @@ public abstract class AddOnImpl implements AddOn {
             mStyleableArrayMapping.put(localStyleableId, remoteAttrIds);
             return remoteAttrIds;
         }
+    }
+
+    /*package*/final boolean isHiddenAddon() {
+        return mHiddenAddOn;
     }
 }

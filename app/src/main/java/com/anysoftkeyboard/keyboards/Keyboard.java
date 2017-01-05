@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-
-
 package com.anysoftkeyboard.keyboards;
 
 import android.content.Context;
@@ -23,7 +21,9 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.util.Xml;
@@ -37,6 +37,8 @@ import com.menny.android.anysoftkeyboard.R;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,15 +46,29 @@ public abstract class Keyboard {
 
     static final String TAG = "Keyboard";
 
+    public static final int KEYBOARD_ROW_MODE_NONE = 0;
+    public static final int KEYBOARD_ROW_MODE_NORMAL = 1;
+    public static final int KEYBOARD_ROW_MODE_IM = 2;
+    public static final int KEYBOARD_ROW_MODE_URL = 3;
+    public static final int KEYBOARD_ROW_MODE_EMAIL = 4;
+    public static final int KEYBOARD_ROW_MODE_PASSWORD = 5;
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({KEYBOARD_ROW_MODE_NONE, KEYBOARD_ROW_MODE_NORMAL, KEYBOARD_ROW_MODE_IM, KEYBOARD_ROW_MODE_URL, KEYBOARD_ROW_MODE_EMAIL, KEYBOARD_ROW_MODE_PASSWORD})
+    public @interface KeyboardRowModeId {}
+
     // Keyboard XML Tags
     private static final String TAG_KEYBOARD = "Keyboard";
     private static final String TAG_ROW = "Row";
     private static final String TAG_KEY = "Key";
 
-    public static final int EDGE_LEFT = 0x01;
-    public static final int EDGE_RIGHT = 0x02;
-    public static final int EDGE_TOP = 0x04;
-    public static final int EDGE_BOTTOM = 0x08;
+    public static final int EDGE_LEFT = 1;
+    public static final int EDGE_RIGHT = 1 << 1;
+    public static final int EDGE_TOP = 1 << 2;
+    public static final int EDGE_BOTTOM = 1 << 3;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(flag = true, value = {EDGE_LEFT, EDGE_RIGHT, EDGE_TOP, EDGE_BOTTOM})
+    public @interface KeyEdgeValue {}
 
     public static final int KEY_EMBLEM_NONE = 0x00;
     public static final int KEY_EMBLEM_TEXT = 0x01;
@@ -100,11 +116,6 @@ public abstract class Keyboard {
     private Key mShiftKey;
 
     /**
-     * Key index for the shift key, if present
-     */
-    private int mShiftKeyIndex = -1;
-
-    /**
      * Total height of the keyboard, including the padding and keys
      */
     private int mTotalHeight;
@@ -136,6 +147,7 @@ public abstract class Keyboard {
     /**
      * Keyboard mode, or zero, if none.
      */
+    @KeyboardRowModeId
     protected final int mKeyboardMode;
 
     // Variables for pre-computing nearest keys.
@@ -179,12 +191,14 @@ public abstract class Keyboard {
          * are {@link Keyboard#EDGE_TOP EDGE_TOP} and
          * {@link Keyboard#EDGE_BOTTOM EDGE_BOTTOM}
          */
+        @KeyEdgeValue
         public int rowEdgeFlags;
 
         /**
          * The keyboard mode for this row
          */
-        public int mode;
+        @KeyboardRowModeId
+        public int mode = KEYBOARD_ROW_MODE_NONE;
 
         protected Keyboard parent;
 
@@ -241,10 +255,17 @@ public abstract class Keyboard {
                 try {
                     switch (localAttrId) {
                         case android.R.attr.rowEdgeFlags:
+                            //noinspection WrongConstant
                             rowEdgeFlags = a.getInt(remoteIndex, 0);
                             break;
                         case android.R.attr.keyboardMode:
-                            mode = a.getResourceId(remoteIndex, 0);
+                            final int modeResource = a.getResourceId(remoteIndex, 0);
+                            if (modeResource != 0) {
+                                //noinspection WrongConstant
+                                mode = res.getInteger(modeResource);// switching to the mode!
+                            } else {
+                                mode = KEYBOARD_ROW_MODE_NONE;
+                            }
                             break;
                     }
                 } catch (Exception e) {
@@ -252,6 +273,10 @@ public abstract class Keyboard {
                 }
             }
             a.recycle();
+        }
+
+        public boolean isRowValidForMode(@KeyboardRowModeId int keyboardRowId) {
+            return (mode == KEYBOARD_ROW_MODE_NONE || mode == keyboardRowId);
         }
     }
 
@@ -294,10 +319,6 @@ public abstract class Keyboard {
          */
         public int gap;
         /**
-         * Whether this key is sticky, i.e., a toggle key
-         */
-        public boolean sticky;
-        /**
          * X coordinate of the key in the keyboard layout
          */
         public int x;
@@ -309,10 +330,6 @@ public abstract class Keyboard {
          * The current pressed state of this key
          */
         public boolean pressed;
-        /**
-         * If this is a sticky key, is it on?
-         */
-        public boolean on;
         /**
          * Text to output when pressed. This can be multiple characters, like
          * ".com"
@@ -330,6 +347,7 @@ public abstract class Keyboard {
          * {@link Keyboard#EDGE_RIGHT}, {@link Keyboard#EDGE_TOP} and
          * {@link Keyboard#EDGE_BOTTOM}.
          */
+        @KeyEdgeValue
         public int edgeFlags;
         /**
          * Whether this is a modifier key, such as Shift or Alt
@@ -367,7 +385,7 @@ public abstract class Keyboard {
             row = parent;
             keyboard = parent.parent;
             height = KeyboardSupport.getKeyHeightFromHeightCode(keyboardDimens, parent.defaultHeightCode, row.parent.mASKContext.getResources().getConfiguration().orientation);
-            width = Math.min(keyboardDimens.getKeyMaxWidth(), parent.defaultWidth);
+            width = parent.defaultWidth;
             gap = parent.defaultHorizontalGap;
             edgeFlags = parent.rowEdgeFlags;
         }
@@ -390,7 +408,7 @@ public abstract class Keyboard {
             this.y = y;
 
             //setting up some defaults
-            width = Math.min(keyboardDimens.getKeyMaxWidth(), parent.defaultWidth);
+            width = parent.defaultWidth;
             height = KeyboardSupport.getKeyHeightFromHeightCode(keyboardDimens, parent.defaultHeightCode, askResources.getConfiguration().orientation);
             gap = parent.defaultHorizontalGap;
             codes = new int[0];
@@ -401,7 +419,6 @@ public abstract class Keyboard {
             showPreview = true;
             dynamicEmblem = KEY_EMBLEM_NONE;
             modifier = false;
-            sticky = false;
 
             //loading data from XML
             int[] remoteKeyboardLayoutStyleable = resourceMapping.getRemoteStyleableArrayFromLocal(R.styleable.KeyboardLayout);
@@ -438,7 +455,6 @@ public abstract class Keyboard {
                         width = getDimensionOrFraction(a,
                                 remoteIndex,
                                 keyboard.mDisplayWidth, parent.defaultWidth);
-                        width = Math.min(keyboardDimens.getKeyMaxWidth(), width);
                         break;
                     case android.R.attr.keyHeight:
                         int heightCode = getKeyHeightCode(a, remoteIndex, parent.defaultHeightCode);
@@ -473,10 +489,8 @@ public abstract class Keyboard {
                     case android.R.attr.isModifier:
                         modifier = a.getBoolean(remoteIndex, false);
                         break;
-                    case android.R.attr.isSticky:
-                        sticky = a.getBoolean(remoteIndex, false);
-                        break;
                     case android.R.attr.keyEdgeFlags:
+                        //noinspection WrongConstant
                         edgeFlags = a.getInt(remoteIndex, 0);
                         edgeFlags |= parent.rowEdgeFlags;
                         break;
@@ -512,7 +526,7 @@ public abstract class Keyboard {
          * Informs the key that it has been pressed, in case it needs to change
          * its appearance or state.
          *
-         * @see #onReleased(boolean)
+         * @see #onReleased()
          */
         public void onPressed() {
             pressed = true;
@@ -523,10 +537,9 @@ public abstract class Keyboard {
          * also change the toggled state of the key if the finger was release
          * inside.
          *
-         * @param inside whether the finger was released inside the key
          * @see #onPressed()
          */
-        public void onReleased(boolean inside) {
+        public void onReleased() {
             pressed = false;
         }
 
@@ -585,25 +598,8 @@ public abstract class Keyboard {
          */
         public int[] getCurrentDrawableState(KeyDrawableStateProvider provider) {
             int[] states = provider.KEY_STATE_NORMAL;
-
-            if (on) {
-                if (pressed) {
-                    states = provider.KEY_STATE_PRESSED_ON;
-                } else {
-                    states = provider.KEY_STATE_NORMAL_ON;
-                }
-            } else {
-                if (sticky) {
-                    if (pressed) {
-                        states = provider.KEY_STATE_PRESSED_OFF;
-                    } else {
-                        states = provider.KEY_STATE_NORMAL_OFF;
-                    }
-                } else {
-                    if (pressed) {
-                        states = provider.KEY_STATE_PRESSED;
-                    }
-                }
+            if (pressed) {
+                states = provider.KEY_STATE_PRESSED;
             }
             return states;
         }
@@ -617,7 +613,7 @@ public abstract class Keyboard {
      *                       and keys.
      */
     public Keyboard(@NonNull AddOn keyboardAddOn, @NonNull Context askContext, @NonNull Context context, int xmlLayoutResId) {
-        this(keyboardAddOn, askContext, context, xmlLayoutResId, 0);
+        this(keyboardAddOn, askContext, context, xmlLayoutResId, KEYBOARD_ROW_MODE_NORMAL);
     }
 
     protected static int getKeyHeightCode(TypedArray a, int remoteIndex, int defaultHeightCode) {
@@ -643,13 +639,16 @@ public abstract class Keyboard {
      *                       and keys.
      * @param modeId         keyboard mode identifier
      */
-    public Keyboard(@NonNull AddOn keyboardAddOn, @NonNull  Context askContext, @NonNull Context context, int xmlLayoutResId, int modeId) {
+    public Keyboard(@NonNull AddOn keyboardAddOn, @NonNull  Context askContext, @NonNull Context context, int xmlLayoutResId, @KeyboardRowModeId int modeId) {
         mAddOn = keyboardAddOn;
         mKeyboardResourceMap = keyboardAddOn.getResourceMapping();
 
         mASKContext = askContext;
         mKeyboardContext = context;
         mLayoutResId = xmlLayoutResId;
+        if (modeId != KEYBOARD_ROW_MODE_NORMAL && modeId != KEYBOARD_ROW_MODE_EMAIL && modeId != KEYBOARD_ROW_MODE_URL && modeId != KEYBOARD_ROW_MODE_IM && modeId != KEYBOARD_ROW_MODE_PASSWORD) {
+            throw new IllegalArgumentException("modeId much be one of KeyboardRowModeId, not including KEYBOARD_ROW_MODE_NONE.");
+        }
         mKeyboardMode = modeId;
 
         mKeys = new ArrayList<>();
@@ -709,9 +708,6 @@ public abstract class Keyboard {
     }
 
     public boolean setShifted(boolean shiftState) {
-        if (mShiftKey != null) {
-            mShiftKey.on = shiftState;
-        }
         if (mShifted != shiftState) {
             mShifted = shiftState;
             return true;
@@ -723,8 +719,9 @@ public abstract class Keyboard {
         return mShifted;
     }
 
-    public int getShiftKeyIndex() {
-        return mShiftKeyIndex;
+    @Nullable
+    public Key getShiftKey() {
+        return mShiftKey;
     }
 
     protected final void computeNearestNeighbors() {
@@ -776,8 +773,13 @@ public abstract class Keyboard {
         return new int[0];
     }
 
-    protected Row createRowFromXml(@NonNull AddOn.AddOnResourceMapping resourceMapping, Resources res, XmlResourceParser parser) {
-        return new Row(resourceMapping, res, this, parser);
+    @Nullable
+    protected Row createRowFromXml(@NonNull AddOn.AddOnResourceMapping resourceMapping, Resources res, XmlResourceParser parser, @KeyboardRowModeId int rowMode) {
+        Row row = new Row(resourceMapping, res, this, parser);
+        if (row.isRowValidForMode(rowMode))
+            return row;
+        else
+            return null;
     }
 
     protected abstract Key createKeyFromXml(@NonNull AddOn.AddOnResourceMapping resourceMapping, Context askContext, Context keyboardContext,
@@ -804,7 +806,6 @@ public abstract class Keyboard {
         Key key = null;
         Row currentRow = null;
         Resources res = mKeyboardContext.getResources();
-        boolean skipRow = false;
         int lastVerticalGap = 0;
 
         try {
@@ -816,9 +817,8 @@ public abstract class Keyboard {
                         inRow = true;
                         x = 0;
                         rowHeight = 0;
-                        currentRow = createRowFromXml(mKeyboardResourceMap, res, parser);
-                        skipRow = currentRow.mode != 0 && currentRow.mode != mKeyboardMode;
-                        if (skipRow) {
+                        currentRow = createRowFromXml(mKeyboardResourceMap, res, parser, mKeyboardMode);
+                        if (currentRow == null) {
                             skipToEndOfRow(parser);
                             inRow = false;
                         }
@@ -833,7 +833,6 @@ public abstract class Keyboard {
                         mKeys.add(key);
                         if (key.getPrimaryCode() == KeyCodes.SHIFT) {
                             mShiftKey = key;
-                            mShiftKeyIndex = mKeys.size() - 1;
                             mModifierKeys.add(key);
                         } else if (key.getPrimaryCode() == KeyCodes.ALT) {
                             mModifierKeys.add(key);

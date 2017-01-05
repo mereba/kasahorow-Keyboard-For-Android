@@ -16,15 +16,18 @@
 
 package com.anysoftkeyboard.ime;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.inputmethodservice.InputMethodService;
 import android.preference.PreferenceManager;
+import android.support.annotation.CallSuper;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -32,7 +35,8 @@ import android.widget.Toast;
 
 import com.anysoftkeyboard.AskPrefs;
 import com.anysoftkeyboard.base.utils.GCUtils;
-import com.anysoftkeyboard.keyboards.views.AnyKeyboardView;
+import com.anysoftkeyboard.dictionaries.Suggest;
+import com.anysoftkeyboard.keyboards.views.KeyboardViewContainerView;
 import com.anysoftkeyboard.keyboards.views.OnKeyboardActionListener;
 import com.anysoftkeyboard.ui.dev.DeveloperUtils;
 import com.anysoftkeyboard.utils.Logger;
@@ -48,11 +52,14 @@ public abstract class AnySoftKeyboardBase
 
     private SharedPreferences mPrefs;
 
-    private AnyKeyboardView mInputView;
+    private KeyboardViewContainerView mInputViewContainer;
+    private InputViewBinder mInputView;
 
     private AlertDialog mOptionsDialog;
 
     private InputMethodManager mInputMethodManager;
+
+    protected Suggest mSuggest;
 
     public AnySoftKeyboardBase() {
         mAskPrefs = AnyApplication.getConfig();
@@ -76,14 +83,19 @@ public abstract class AnySoftKeyboardBase
         Logger.i(TAG, "****** AnySoftKeyboard v%s (%d) service started.", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
 
         mInputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        mSuggest = createSuggest();
     }
 
     protected SharedPreferences getSharedPrefs() {
         return mPrefs;
     }
 
-    public AnyKeyboardView getInputView() {
+    public InputViewBinder getInputView() {
         return mInputView;
+    }
+
+    public ViewGroup getInputViewContainer() {
+        return mInputViewContainer;
     }
 
     protected abstract String getSettingsInputMethodId();
@@ -135,7 +147,7 @@ public abstract class AnySoftKeyboardBase
         mOptionsDialog = builder.create();
         Window window = mOptionsDialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        lp.token = mInputView.getWindowToken();
+        lp.token = ((View) getInputView()).getWindowToken();
         lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
         window.setAttributes(lp);
         window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
@@ -144,19 +156,27 @@ public abstract class AnySoftKeyboardBase
 
     @Override
     public View onCreateInputView() {
-        if (mInputView != null) mInputView.onViewNotRequired();
+        if (getInputView() != null) getInputView().onViewNotRequired();
         mInputView = null;
 
         GCUtils.getInstance().performOperationWithMemRetry(TAG,
                 new GCUtils.MemRelatedOperation() {
+                    @SuppressLint("InflateParams")
                     public void operation() {
-                        mInputView = (AnyKeyboardView) getLayoutInflater().inflate(R.layout.main_keyboard_layout, null);
+                        mInputViewContainer = createInputViewContainer();
+                        mInputViewContainer.setBackgroundResource(R.drawable.ask_wallpaper);
                     }
                 }, true);
         // resetting token users
         mOptionsDialog = null;
 
-        return mInputView;
+        mInputView = mInputViewContainer.getStandardKeyboardView();
+        mInputViewContainer.setOnKeyboardActionListener(this);
+        return mInputViewContainer;
+    }
+
+    protected KeyboardViewContainerView createInputViewContainer() {
+        return (KeyboardViewContainerView) getLayoutInflater().inflate(R.layout.main_keyboard_layout, null);
     }
 
     @Override
@@ -170,9 +190,28 @@ public abstract class AnySoftKeyboardBase
 
     @Override
     public void onDestroy() {
-        if (mInputView != null) mInputView.onViewNotRequired();
+        if (getInputView() != null) getInputView().onViewNotRequired();
         mInputView = null;
 
         super.onDestroy();
+    }
+
+    @NonNull
+    protected Suggest createSuggest() {
+        return new Suggest(this);
+    }
+
+    protected abstract boolean isAlphabet(int code);
+
+    protected abstract boolean isSuggestionAffectingCharacter(int code);
+
+    @CallSuper
+    protected void onLoadSettingsRequired(SharedPreferences sharedPreferences) {
+
+    }
+
+    @CallSuper
+    protected void abortCorrectionAndResetPredictionState(boolean forever) {
+        mSuggest.resetNextWordSentence();
     }
 }

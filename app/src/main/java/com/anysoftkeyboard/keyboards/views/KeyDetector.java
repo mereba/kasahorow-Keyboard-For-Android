@@ -16,36 +16,42 @@
 
 package com.anysoftkeyboard.keyboards.views;
 
-import com.anysoftkeyboard.keyboards.Keyboard;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
+import com.anysoftkeyboard.keyboards.AnyKeyboard;
 import com.anysoftkeyboard.keyboards.Keyboard.Key;
 
 import java.util.Arrays;
-import java.util.List;
 
-abstract class KeyDetector {
-    protected Keyboard mKeyboard;
+public abstract class KeyDetector {
+    @Nullable
+    protected AnyKeyboard mKeyboard;
 
     private final int[] mNearByCodes;
-    private Key[] mKeys;
+    @NonNull
+    private Key[] mKeys = new Key[0];
 
-    protected int mCorrectionX;
+    private int mCorrectionX;
 
-    protected int mCorrectionY;
+    private int mCorrectionY;
 
     protected boolean mProximityCorrectOn;
 
     protected int mProximityThresholdSquare;
+    @Nullable
+    private Key mShiftKey;
 
     protected KeyDetector() {
         mNearByCodes = new int[getMaxNearbyKeys()];
     }
 
-    public Key[] setKeyboard(Keyboard keyboard) {
-        if (keyboard == null) return new Key[0];
+    public Key[] setKeyboard(AnyKeyboard keyboard, @Nullable Key shiftKey) {
+        mShiftKey = shiftKey;
         mKeyboard = keyboard;
-        List<Key> keys = mKeyboard.getKeys();
-        mKeys = keys.toArray(new Key[keys.size()]);
-        return mKeys;
+
+        if (keyboard == null) return mKeys = new Key[0];
+        return mKeys = mKeyboard.getKeys().toArray(new Key[mKeyboard.getKeys().size()]);
     }
 
     public void setCorrection(float correctionX, float correctionY) {
@@ -62,18 +68,11 @@ abstract class KeyDetector {
     }
 
     protected Key[] getKeys() {
-        if (mKeys == null)
-            throw new IllegalStateException("keyboard isn't set");
-        // mKeyboard is guaranteed not to be null at setKeybaord() method if mKeys is not null
         return mKeys;
     }
 
     public void setProximityCorrectionEnabled(boolean enabled) {
         mProximityCorrectOn = enabled;
-    }
-
-    public boolean isProximityCorrectionEnabled() {
-        return mProximityCorrectOn;
     }
 
     public void setProximityThreshold(int threshold) {
@@ -85,12 +84,12 @@ abstract class KeyDetector {
      * method. The maximum size of the array should be computed by {@link #getMaxNearbyKeys}.
      *
      * @return Allocates and returns an array that can hold all key indices returned by
-     *         {@link #getKeyIndexAndNearbyCodes} method. All elements in the returned array are
-     *         initialized by {@link com.android.inputmethod.latin.LatinKeyboardView.NOT_A_KEY}
-     *         value.
+     * {@link #getKeyIndexAndNearbyCodes} method. All elements in the returned array are
+     * initialized by {@link AnyKeyboardViewBase#NOT_A_KEY}
+     * value.
      */
     public int[] newCodeArray() {
-        Arrays.fill(mNearByCodes, AnyKeyboardBaseView.NOT_A_KEY);
+        Arrays.fill(mNearByCodes, AnyKeyboardViewBase.NOT_A_KEY);
         return mNearByCodes;
     }
 
@@ -99,7 +98,7 @@ abstract class KeyDetector {
      * {@link #getKeyIndexAndNearbyCodes}.
      *
      * @return Returns maximum size of the array that can contain all nearby key indices returned
-     *         by {@link #getKeyIndexAndNearbyCodes}.
+     * by {@link #getKeyIndexAndNearbyCodes}.
      */
     abstract protected int getMaxNearbyKeys();
 
@@ -115,4 +114,11 @@ abstract class KeyDetector {
      * @return The nearest key index
      */
     abstract public int getKeyIndexAndNearbyCodes(int x, int y, int[] allKeys);
+
+    public boolean isKeyShifted(Key key) {
+        if (mKeyboard == null) return false;
+        AnyKeyboard.AnyKey anyKey = (AnyKeyboard.AnyKey) key;
+        return mKeyboard.keyboardSupportShift() &&
+                ((mShiftKey != null && mShiftKey.pressed) || (anyKey.isShiftCodesAlways() && mKeyboard.isShifted()));
+    }
 }

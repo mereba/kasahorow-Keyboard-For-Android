@@ -1,5 +1,6 @@
 package com.anysoftkeyboard;
 
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 
@@ -106,7 +107,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         mAnySoftKeyboardUnderTest.pickSuggestionManually(2, "hello");
         Assert.assertEquals("hello ", inputConnection.getCurrentTextInInputConnection());
@@ -123,7 +124,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
         Assert.assertEquals("hell ", inputConnection.getCurrentTextInInputConnection());
@@ -140,7 +141,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
         Assert.assertEquals("hell ", inputConnection.getCurrentTextInInputConnection());
@@ -151,7 +152,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
         Assert.assertEquals("hell 2 hell ", inputConnection.getCurrentTextInInputConnection());
@@ -195,7 +196,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hell");
-        verifySuggestions(mSpiedCandidateView, true, "hell", "hell", "hello");
+        verifySuggestions(true, "hell", "hell", "hello");
 
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
         Assert.assertEquals("hell ", inputConnection.getCurrentTextInInputConnection());
@@ -221,11 +222,11 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, keyEventArgumentCaptor.getAllValues().get(1).getKeyCode());
         Assert.assertEquals(KeyEvent.ACTION_UP, keyEventArgumentCaptor.getAllValues().get(1).getAction());
         //and never the ENTER character
-        Mockito.verify(inputConnection, Mockito.never()).commitText("\n", 1);
+        Assert.assertEquals("\n", inputConnection.getCurrentTextInInputConnection());
     }
 
     @Test
-    public void testSendsENTERKeyEventIfShiftIsPressedButImeDoesNotHaveAction() {
+    public void testSendsENTERKeyEventIfShiftIsPressedAndImeDoesNotHaveAction() {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
         mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
 
@@ -237,8 +238,8 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         Assert.assertEquals(KeyEvent.ACTION_DOWN, keyEventArgumentCaptor.getAllValues().get(0).getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, keyEventArgumentCaptor.getAllValues().get(1).getKeyCode());
         Assert.assertEquals(KeyEvent.ACTION_UP, keyEventArgumentCaptor.getAllValues().get(1).getAction());
-        //and never the ENTER character
-        Mockito.verify(inputConnection, Mockito.never()).commitText("\n", 1);
+        //and we have ENTER in the input-connection
+        Assert.assertEquals("\n", inputConnection.getCurrentTextInInputConnection());
     }
 
     @Test
@@ -261,11 +262,133 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
     }
 
     @Test
+    public void testDeleteWholeWordWhenShiftAndBackSpaceArePressed() {
+        Assert.assertTrue(AnyApplication.getConfig().useBackword());//default behavior
+
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testDeleteCharacterWhenNoShiftAndBackSpaceArePressed() {
+        Assert.assertTrue(AnyApplication.getConfig().useBackword());//default behavior
+
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("hell", inputConnection.getCurrentTextInInputConnection());
+
+    }
+
+    @Test
+    public void testDeleteWholeTextFromOnText() {
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello ");
+        Assert.assertEquals("hello ", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onText(null, "text");
+
+        Assert.assertEquals("hello text", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("hello ", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testDeleteCharacterWhenShiftAndBackSpaceArePressedAndOptionDisabled() {
+        SharedPrefsHelper.setPrefsValue(R.string.settings_key_use_backword, false);
+        Assert.assertFalse(AnyApplication.getConfig().useBackword());
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("hell", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testDeleteCharacterWhenShiftLockedAndBackSpaceArePressed() {
+        Assert.assertTrue(AnyApplication.getConfig().useBackword());
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        //now it is locked
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("hell", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testDeleteCharacterWhenShiftLockedAndHeldAndBackSpaceArePressed() {
+        Assert.assertTrue(AnyApplication.getConfig().useBackword());
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertFalse(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        //now it is locked
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShifted());
+        Assert.assertTrue(mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().isShiftLocked());
+
+        mAnySoftKeyboardUnderTest.onPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testDeleteCharacterWhenNoShiftAndBackSpaceArePressedAndOptionDisabled() {
+        SharedPrefsHelper.setPrefsValue(R.string.settings_key_use_backword, false);
+        Assert.assertFalse(AnyApplication.getConfig().useBackword());
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateTextTyping("hello");
+        Assert.assertEquals("hello", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.DELETE);
+
+        Assert.assertEquals("hell", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
     public void testSwapPunctuationWithAutoSpaceOnAutoCorrectedWithPunctuation() {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         //typing punctuation
         mAnySoftKeyboardUnderTest.simulateKeyPress('!');
@@ -279,7 +402,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         //typing punctuation
         mAnySoftKeyboardUnderTest.simulateKeyPress('.');
@@ -294,7 +417,7 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
 
         mAnySoftKeyboardUnderTest.simulateTextTyping("hel");
-        verifySuggestions(mSpiedCandidateView, true, "hel", "hell", "hello");
+        verifySuggestions(true, "hel", "hell", "hello");
 
         //typing punctuation
         mAnySoftKeyboardUnderTest.simulateKeyPress('.');
@@ -327,5 +450,209 @@ public class AnySoftKeyboardGimmicksTest extends AnySoftKeyboardBaseTest {
         Assert.assertEquals(")", inputConnection.getCurrentTextInInputConnection());
         mAnySoftKeyboardUnderTest.simulateKeyPress(')');
         Assert.assertEquals(")(", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testShiftBehaviorForLetters() throws Exception {
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("q", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQ", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQq", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQ", inputConnection.getCurrentTextInInputConnection());
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQQ", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQQq", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQQqQ", inputConnection.getCurrentTextInInputConnection());
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQQqQQ", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onRelease(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('q');
+        Assert.assertEquals("qQqQQqQQq", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testShiftBehaviorForNonLetters() throws Exception {
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("'", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("'''", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''''", inputConnection.getCurrentTextInInputConnection());
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("'''''", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SHIFT);
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''''''", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onPress(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getShiftKey().onPressed();
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''''''\"", inputConnection.getCurrentTextInInputConnection());
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''''''\"\"", inputConnection.getCurrentTextInInputConnection());
+
+        mAnySoftKeyboardUnderTest.onRelease(KeyCodes.SHIFT);
+        mAnySoftKeyboardUnderTest.getCurrentKeyboardForTests().getShiftKey().onReleased();
+
+        mAnySoftKeyboardUnderTest.simulateKeyPress('\'');
+        Assert.assertEquals("''''''\"\"'", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testEditorPerformsActionIfImeOptionsSpecified() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_DONE, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        Assert.assertEquals(EditorInfo.IME_ACTION_DONE, inputConnection.getLastEditorAction());
+        //did not passed the ENTER to the IC
+        Assert.assertEquals("", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testEditorPerformsActionIfActionLabelSpecified() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_UNSPECIFIED, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        editorInfo.actionId = 99;
+        editorInfo.actionLabel = "test label";
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        Assert.assertEquals(99, inputConnection.getLastEditorAction());
+        //did not passed the ENTER to the IC
+        Assert.assertEquals("", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testEditorDoesNotPerformsActionIfNoEnterActionFlagIsSet() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_ENTER_ACTION, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        //did not perform action
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        //passed the ENTER to the IC
+        Assert.assertEquals("\n", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testEditorDoesPerformsActionImeIsUnSpecified() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_UNSPECIFIED, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        //did not perform action
+        Assert.assertEquals(EditorInfo.IME_ACTION_UNSPECIFIED, inputConnection.getLastEditorAction());
+        //did not passed the ENTER to the IC
+        Assert.assertEquals("", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testEditorPerformsActionIfSpecifiedButNotSendingEnter() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_DONE, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.SPACE);
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        Assert.assertEquals(" ", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testSendsEnterIfNoneAction() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_NONE, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        //passed the ENTER to the IC
+        Assert.assertEquals("\n", inputConnection.getCurrentTextInInputConnection());
+    }
+
+    @Test
+    public void testSendsEnterIfUnspecificAction() throws Exception {
+        mAnySoftKeyboardUnderTest.onFinishInputView(true);
+        mAnySoftKeyboardUnderTest.onFinishInput();
+
+        EditorInfo editorInfo = TestableAnySoftKeyboard.createEditorInfo(EditorInfo.IME_ACTION_UNSPECIFIED, 0);
+        mAnySoftKeyboardUnderTest.onStartInput(editorInfo, false);
+        mAnySoftKeyboardUnderTest.onStartInputView(editorInfo, false);
+        TestInputConnection inputConnection = (TestInputConnection) mAnySoftKeyboardUnderTest.getCurrentInputConnection();
+
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
+        mAnySoftKeyboardUnderTest.simulateKeyPress(KeyCodes.ENTER);
+        Assert.assertEquals(0, inputConnection.getLastEditorAction());
     }
 }

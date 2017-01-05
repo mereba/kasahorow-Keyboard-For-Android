@@ -18,6 +18,7 @@ package com.anysoftkeyboard.keyboards;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.anysoftkeyboard.addons.AddOn;
 import com.anysoftkeyboard.keyboardextensions.KeyboardExtension;
@@ -35,7 +36,7 @@ public class AnyPopupKeyboard extends AnyKeyboard {
                             int xmlLayoutResId,
                             final KeyboardDimens keyboardDimens,
                             String keyboardName) {
-        super(keyboardAddOn, askContext, context, xmlLayoutResId, -1);
+        super(keyboardAddOn, askContext, context, xmlLayoutResId, KEYBOARD_ROW_MODE_NORMAL);
         mKeyboardName = keyboardName;
         loadKeyboard(keyboardDimens);
     }
@@ -69,7 +70,6 @@ public class AnyPopupKeyboard extends AnyKeyboard {
         baseKey.label = Character.toString(popupCharacter);
         char upperCasePopupCharacter = Character.toUpperCase(popupCharacter);
         baseKey.shiftedCodes = new int[]{(int) upperCasePopupCharacter};
-        baseKey.shiftedKeyLabel = Character.toString(upperCasePopupCharacter);
         float x = baseKey.width;
         AnyKey aKey = null;
         for (int popupCharIndex = characterOffset+1;
@@ -83,7 +83,6 @@ public class AnyPopupKeyboard extends AnyKeyboard {
             aKey.label = Character.toString(popupCharacter);
             upperCasePopupCharacter = Character.toUpperCase(popupCharacter);
             aKey.shiftedCodes = new int[]{(int) upperCasePopupCharacter};
-            aKey.shiftedKeyLabel = Character.toString(upperCasePopupCharacter);
             aKey.x = (int) x;
             aKey.width -= keyHorizontalGap;//the gap is on both sides
             aKey.y = (int) y;
@@ -159,12 +158,13 @@ public class AnyPopupKeyboard extends AnyKeyboard {
     }
 
     @Override
-    protected void addGenericRows(int mode, KeyboardDimens keyboardDimens, KeyboardExtension topRowPlugin, KeyboardExtension bottomRowPlugin) {
+    protected void addGenericRows(@NonNull KeyboardDimens keyboardDimens, @Nullable KeyboardExtension topRowPlugin, @NonNull KeyboardExtension bottomRowPlugin) {
         //no generic rows in popups, only in main keyboard
     }
 
     @Override
-    protected boolean keyboardSupportShift() {
+    public boolean keyboardSupportShift() {
+        //forcing this, so the parent keyboard will determine the shift value
         return true;
     }
 

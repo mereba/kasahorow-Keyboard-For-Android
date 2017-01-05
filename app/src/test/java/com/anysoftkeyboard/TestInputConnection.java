@@ -8,13 +8,14 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.UnderlineSpan;
 import android.view.KeyEvent;
+import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.CompletionInfo;
 import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
-import android.view.inputmethod.InputConnection;
+import android.widget.TextView;
 
-public class TestInputConnection implements InputConnection {
+public class TestInputConnection extends BaseInputConnection {
 
     @NonNull
     private UnderlineSpan mCurrentComposingSpan = new UnderlineSpan();
@@ -25,6 +26,8 @@ public class TestInputConnection implements InputConnection {
     private int mCursorPosition = 0;
     private int mSelectionEndPosition = 0;
 
+    private int mLastEditorAction = 0;
+
     private SpannableStringBuilder mInputText = new SpannableStringBuilder();
     @NonNull
     private final AnySoftKeyboard mIme;
@@ -32,8 +35,10 @@ public class TestInputConnection implements InputConnection {
     private String mLastCommitCorrection = "";
 
     public TestInputConnection(@NonNull AnySoftKeyboard ime) {
+        super(new TextView(ime.getApplicationContext()), false);
         mIme = ime;
     }
+
 
     @Override
     public CharSequence getTextBeforeCursor(int n, int flags) {
@@ -199,7 +204,12 @@ public class TestInputConnection implements InputConnection {
 
     @Override
     public boolean performEditorAction(int editorAction) {
+        mLastEditorAction = editorAction;
         return false;
+    }
+
+    public int getLastEditorAction() {
+        return mLastEditorAction;
     }
 
     @Override
@@ -246,6 +256,9 @@ public class TestInputConnection implements InputConnection {
             } else if (event.getKeyCode() == KeyEvent.KEYCODE_SPACE) {
                 handled = true;
                 commitText(" ", 1);
+            } else if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                handled = true;
+                commitText("\n", 1);
             } else if (event.getKeyCode() >= KeyEvent.KEYCODE_0 || event.getKeyCode() <= KeyEvent.KEYCODE_9) {
                 handled = true;
                 commitText(Integer.toString(event.getKeyCode() - KeyEvent.KEYCODE_0), 1);

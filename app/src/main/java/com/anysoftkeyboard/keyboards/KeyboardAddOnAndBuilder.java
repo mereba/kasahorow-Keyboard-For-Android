@@ -42,9 +42,10 @@ public class KeyboardAddOnAndBuilder extends AddOnImpl {
                                    String additionalIsLetterExceptions,
                                    String sentenceSeparators,
                                    String description,
+                                   boolean isHidden,
                                    int keyboardIndex,
                                    boolean keyboardDefaultEnabled) {
-        super(askContext, packageContext, KEYBOARD_PREF_PREFIX + id, nameResId, description, keyboardIndex);
+        super(askContext, packageContext, KEYBOARD_PREF_PREFIX + id, nameResId, description, isHidden, keyboardIndex);
 
         mResId = layoutResId;
         if (landscapeLayoutResId == AddOn.INVALID_RES_ID) {
@@ -74,7 +75,7 @@ public class KeyboardAddOnAndBuilder extends AddOnImpl {
     }
 
     @Nullable
-    public AnyKeyboard createKeyboard(Context askContext, int mode) {
+    public AnyKeyboard createKeyboard(Context askContext, @Keyboard.KeyboardRowModeId int mode) {
         Context remoteContext = getPackageContext();
         if (remoteContext == null) return null;
         return new ExternalAnyKeyboard(this, askContext, remoteContext, mResId, mLandscapeResId, getId(), getName(), mIconResId, mQwertyTranslationId, mDefaultDictionary, mAdditionalIsLetterExceptions, mSentenceSeparators, mode);

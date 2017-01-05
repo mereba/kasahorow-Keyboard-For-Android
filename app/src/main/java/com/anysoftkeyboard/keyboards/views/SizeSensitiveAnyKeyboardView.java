@@ -3,7 +3,7 @@ package com.anysoftkeyboard.keyboards.views;
 import android.content.Context;
 import android.util.AttributeSet;
 
-public class SizeSensitiveAnyKeyboardView extends AnyKeyboardBaseView {
+public class SizeSensitiveAnyKeyboardView extends AnyKeyboardViewBase {
     public SizeSensitiveAnyKeyboardView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -18,7 +18,7 @@ public class SizeSensitiveAnyKeyboardView extends AnyKeyboardBaseView {
         if (getKeyboard() != null) {
             mKeyboardDimens.setKeyboardMaxWidth(w - getPaddingLeft() - getPaddingRight());
             getKeyboard().onKeyboardViewWidthChanged(w, oldw);
-            setKeyboard(getKeyboard());
+            setKeyboard(getKeyboard(), mNextAlphabetKeyboardName, mNextSymbolsKeyboardName);
         }
     }
 }

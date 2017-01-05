@@ -27,6 +27,10 @@ class ProximityKeyDetector extends KeyDetector {
     // working area
     private int[] mDistances = new int[MAX_NEARBY_KEYS];
 
+    ProximityKeyDetector() {
+        super();
+    }
+
     @Override
     protected int getMaxNearbyKeys() {
         return MAX_NEARBY_KEYS;
@@ -37,8 +41,8 @@ class ProximityKeyDetector extends KeyDetector {
         final Key[] keys = getKeys();
         final int touchX = getTouchX(x);
         final int touchY = getTouchY(y);
-        int primaryIndex = AnyKeyboardBaseView.NOT_A_KEY;
-        int closestKey = AnyKeyboardBaseView.NOT_A_KEY;
+        int primaryIndex = AnyKeyboardViewBase.NOT_A_KEY;
+        int closestKey = AnyKeyboardViewBase.NOT_A_KEY;
         int closestKeyDist = mProximityThresholdSquare + 1;
         int[] distances = mDistances;
         Arrays.fill(distances, Integer.MAX_VALUE);
@@ -80,7 +84,7 @@ class ProximityKeyDetector extends KeyDetector {
                 }
             }
         }
-        if (primaryIndex == AnyKeyboardBaseView.NOT_A_KEY) {
+        if (primaryIndex == AnyKeyboardViewBase.NOT_A_KEY) {
             primaryIndex = closestKey;
         }
 
